@@ -232,7 +232,7 @@ fn create_hourly_rate_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: V
         .set_label_area_size(LabelAreaPosition::Left, 40)
         .set_label_area_size(LabelAreaPosition::Right, 40)
         .set_label_area_size(LabelAreaPosition::Bottom, 40)
-        .caption("Hours worked / $ earned (per month)", ("sans-serif", 40))
+        .caption("Hourly rate (per month)", ("sans-serif", 40))
         .build_cartesian_2d(min_date..max_date, 0.0..max_hours)
         .unwrap();
 
