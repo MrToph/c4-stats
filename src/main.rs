@@ -159,39 +159,103 @@ fn get_monthly_awards() -> Vec<(Date<Utc>, f64)> {
     v
 }
 
-fn main() {
-    let hours_worked = get_monthly_hours();
-    println!("{:?}", hours_worked);
-    let awards_earned = get_monthly_awards();
-    println!("{:?}", awards_earned);
-
-    let root_area = BitMapBackend::new("plots/hours_worked.png", (1280, 768)).into_drawing_area();
+fn create_dual_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Date<Utc>, f64)>) {
+    let root_area =
+        BitMapBackend::new("plots/work_awards_dual.png", (1280, 768)).into_drawing_area();
     root_area.fill(&WHITE).unwrap();
 
     let min_date = *hours_worked.iter().map(|(date, _)| date).min().unwrap();
     let max_date = *hours_worked.iter().map(|(date, _)| date).max().unwrap();
     // does not work, cannot sort f64s ...
     // let max_val = *hours_worked.iter().map(|(_, minutes)| minutes).max().unwrap();
-    let max_val = hours_worked
+    let max_hours = hours_worked
         .iter()
         .map(|(_, minutes)| *minutes)
+        .fold(f64::NEG_INFINITY, f64::max);
+    let max_awards = awards_earned
+        .iter()
+        .map(|(_, awards)| *awards)
+        .fold(f64::NEG_INFINITY, f64::max);
+
+    let mut ctx = ChartBuilder::on(&root_area)
+        .set_label_area_size(LabelAreaPosition::Left, 40)
+        .set_label_area_size(LabelAreaPosition::Right, 70)
+        .set_label_area_size(LabelAreaPosition::Bottom, 40)
+        .caption("Hours worked / $ earned (per month)", ("sans-serif", 40))
+        .build_cartesian_2d(min_date..max_date, 0.0..max_hours)
+        .unwrap()
+        .set_secondary_coord(min_date..max_date, 0.0..max_awards);
+
+    ctx.configure_mesh()
+        .x_labels(hours_worked.len())
+        // We can also change the format of the label text
+        .x_label_formatter(&|d| d.format("%d-%b-%y").to_string())
+        .y_desc("Hours worked")
+        .draw()
+        .unwrap();
+
+    ctx.configure_secondary_axes()
+        .y_desc("$ earned")
+        .draw()
+        .unwrap();
+
+    ctx.draw_series(LineSeries::new(hours_worked, &BLUE))
+        .unwrap()
+        .label("hours worked")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+
+    ctx.draw_secondary_series(LineSeries::new(awards_earned, &RED))
+        .unwrap()
+        .label("$ earned")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+
+    ctx.configure_series_labels()
+        .background_style(&RGBColor(255, 255, 255))
+        .draw()
+        .unwrap();
+}
+
+fn create_hourly_rate_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Date<Utc>, f64)>) {
+    let hourly_rate:Vec<(Date<Utc>, f64)> = hours_worked.into_iter().zip(awards_earned.iter()).map(|((date, hours), (_date, awards))| (date, awards / hours)).collect();
+    println!("{:?}", hourly_rate);
+    let root_area =
+        BitMapBackend::new("plots/hourly_rate.png", (1280, 768)).into_drawing_area();
+    root_area.fill(&WHITE).unwrap();
+
+    let min_date = *hourly_rate.iter().map(|(date, _)| date).min().unwrap();
+    let max_date = *hourly_rate.iter().map(|(date, _)| date).max().unwrap();
+    let max_hours = hourly_rate.iter()
+        .map(|(_, val)| *val)
         .fold(f64::NEG_INFINITY, f64::max);
 
     let mut ctx = ChartBuilder::on(&root_area)
         .set_label_area_size(LabelAreaPosition::Left, 40)
         .set_label_area_size(LabelAreaPosition::Right, 40)
         .set_label_area_size(LabelAreaPosition::Bottom, 40)
-        .caption("Hours worked (per month)", ("sans-serif", 40))
-        .build_cartesian_2d(min_date..max_date, 0.0..max_val)
+        .caption("Hours worked / $ earned (per month)", ("sans-serif", 40))
+        .build_cartesian_2d(min_date..max_date, 0.0..max_hours)
         .unwrap();
 
     ctx.configure_mesh()
-        .x_labels(hours_worked.len())
+        .x_labels(hourly_rate.len())
         // We can also change the format of the label text
         .x_label_formatter(&|d| d.format("%d-%b-%y").to_string())
+        .y_desc("Hourly rate $/h")
         .draw()
         .unwrap();
 
-    ctx.draw_series(LineSeries::new(hours_worked, &BLUE))
-        .unwrap();
+    ctx.draw_series(LineSeries::new(hourly_rate, &BLUE))
+        .unwrap()
+        .label("hourly rate $/h");
+}
+
+fn main() {
+    let hours_worked = get_monthly_hours();
+    println!("{:?}", hours_worked);
+    let awards_earned = get_monthly_awards();
+    println!("{:?}", awards_earned);
+
+    // ctx.draw_series takes ownership
+    create_dual_plot(hours_worked.clone(), awards_earned.clone());
+    create_hourly_rate_plot(hours_worked.clone(), awards_earned.clone());
 }
