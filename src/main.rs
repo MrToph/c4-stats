@@ -164,8 +164,8 @@ fn create_dual_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Dat
         BitMapBackend::new("plots/work_awards_dual.png", (1280, 768)).into_drawing_area();
     root_area.fill(&WHITE).unwrap();
 
-    let min_date = *hours_worked.iter().map(|(date, _)| date).min().unwrap();
-    let max_date = *hours_worked.iter().map(|(date, _)| date).max().unwrap();
+    let min_date = 0;
+    let max_date = hours_worked.len() - 1;
     // does not work, cannot sort f64s ...
     // let max_val = *hours_worked.iter().map(|(_, minutes)| minutes).max().unwrap();
     let max_hours = hours_worked
@@ -189,7 +189,7 @@ fn create_dual_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Dat
     ctx.configure_mesh()
         .x_labels(hours_worked.len())
         // We can also change the format of the label text
-        .x_label_formatter(&|d| d.format("%d-%b-%y").to_string())
+        .x_label_formatter(&|d| hours_worked[*d].0.format("%b-%y").to_string())
         .y_desc("Hours worked")
         .draw()
         .unwrap();
@@ -199,15 +199,27 @@ fn create_dual_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Dat
         .draw()
         .unwrap();
 
-    ctx.draw_series(LineSeries::new(hours_worked, &BLUE))
-        .unwrap()
-        .label("hours worked")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+    ctx.draw_series(LineSeries::new(
+        hours_worked
+            .iter()
+            .enumerate()
+            .map(|(index, &(_x, y))| (index, y)),
+        &BLUE,
+    ))
+    .unwrap()
+    .label("hours worked")
+    .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
 
-    ctx.draw_secondary_series(LineSeries::new(awards_earned, &RED))
-        .unwrap()
-        .label("$ earned")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+    ctx.draw_secondary_series(LineSeries::new(
+        awards_earned
+            .iter()
+            .enumerate()
+            .map(|(index, &(_x, y))| (index, y)),
+        &RED,
+    ))
+    .unwrap()
+    .label("$ earned")
+    .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
 
     ctx.configure_series_labels()
         .background_style(&RGBColor(255, 255, 255))
@@ -215,16 +227,23 @@ fn create_dual_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Dat
         .unwrap();
 }
 
-fn create_hourly_rate_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Date<Utc>, f64)>) {
-    let hourly_rate:Vec<(Date<Utc>, f64)> = hours_worked.into_iter().zip(awards_earned.iter()).map(|((date, hours), (_date, awards))| (date, awards / hours)).collect();
+fn create_hourly_rate_plot(
+    hours_worked: Vec<(Date<Utc>, f64)>,
+    awards_earned: Vec<(Date<Utc>, f64)>,
+) {
+    let hourly_rate: Vec<(Date<Utc>, f64)> = hours_worked
+        .iter()
+        .zip(awards_earned.iter())
+        .map(|(&(date, hours), &(_date, awards))| (date, awards / hours))
+        .collect();
     println!("{:?}", hourly_rate);
-    let root_area =
-        BitMapBackend::new("plots/hourly_rate.png", (1280, 768)).into_drawing_area();
+    let root_area = BitMapBackend::new("plots/hourly_rate.png", (1280, 768)).into_drawing_area();
     root_area.fill(&WHITE).unwrap();
 
-    let min_date = *hourly_rate.iter().map(|(date, _)| date).min().unwrap();
-    let max_date = *hourly_rate.iter().map(|(date, _)| date).max().unwrap();
-    let max_hours = hourly_rate.iter()
+    let min_date = 0;
+    let max_date = hourly_rate.len() - 1;
+    let max_hours = hourly_rate
+        .iter()
         .map(|(_, val)| *val)
         .fold(f64::NEG_INFINITY, f64::max);
 
@@ -237,16 +256,22 @@ fn create_hourly_rate_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: V
         .unwrap();
 
     ctx.configure_mesh()
-        .x_labels(hourly_rate.len())
+        .x_labels(hours_worked.len())
         // We can also change the format of the label text
-        .x_label_formatter(&|d| d.format("%d-%b-%y").to_string())
+        .x_label_formatter(&|d| hours_worked[*d].0.format("%b-%y").to_string())
         .y_desc("Hourly rate $/h")
         .draw()
         .unwrap();
 
-    ctx.draw_series(LineSeries::new(hourly_rate, &BLUE))
-        .unwrap()
-        .label("hourly rate $/h");
+    ctx.draw_series(LineSeries::new(
+        hourly_rate
+            .iter()
+            .enumerate()
+            .map(|(index, &(_x, y))| (index, y)),
+        &BLUE,
+    ))
+    .unwrap()
+    .label("hourly rate $/h");
 }
 
 fn main() {
