@@ -110,8 +110,6 @@ struct Finding {
 }
 
 pub fn get_monthly_awards() -> Vec<(Date<Utc>, f64)> {
-    // https://raw.githubusercontent.com/code-423n4/code423n4.com/main/_data/contests/contests.csv
-    // https://raw.githubusercontent.com/code-423n4/code423n4.com/main/_data/findings/findings.csv
     let mut contests = HashMap::<String, ContestDuration>::new();
 
     let mut rdr = csv::Reader::from_path("stats/raw/contests.csv").unwrap();
@@ -159,8 +157,6 @@ pub fn get_monthly_awards() -> Vec<(Date<Utc>, f64)> {
 }
 
 pub fn get_wardens_per_contest() -> Vec<(DateTime<Utc>, u64)> {
-    // https://raw.githubusercontent.com/code-423n4/code423n4.com/main/_data/contests/contests.csv
-    // https://raw.githubusercontent.com/code-423n4/code423n4.com/main/_data/findings/findings.csv
     let mut data = HashMap::<DateTime<Utc>, u64>::new();
     let mut rdr = csv::Reader::from_path("stats/raw/findings.csv").unwrap();
     let findings_iter: Vec<Finding> = rdr
