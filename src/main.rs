@@ -159,6 +159,45 @@ fn get_monthly_awards() -> Vec<(Date<Utc>, f64)> {
     v
 }
 
+fn get_wardens_per_contest() -> Vec<(DateTime<Utc>, u64)> {
+    // https://raw.githubusercontent.com/code-423n4/code423n4.com/main/_data/contests/contests.csv
+    // https://raw.githubusercontent.com/code-423n4/code423n4.com/main/_data/findings/findings.csv
+    let mut data = HashMap::<DateTime<Utc>, u64>::new();
+    let mut rdr = csv::Reader::from_path("stats/raw/findings.csv").unwrap();
+    let findings_iter: Vec<Finding> = rdr
+        .deserialize()
+        .filter(|r: &Result<Finding, csv::Error>| !r.is_err())
+        .map(|r| r.unwrap())
+        .collect();
+
+    let mut rdr = csv::Reader::from_path("stats/raw/contests.csv").unwrap();
+    rdr.deserialize()
+        .filter(|r: &Result<ContestRaw, csv::Error>| !r.is_err())
+        .map(|r| r.unwrap())
+        .for_each(|c| {
+            let id = c.id.clone();
+            let t: ContestDuration = c.into();
+            let mut wardens_in_contest = findings_iter
+                .iter()
+                .filter(|&f| f.contest == id)
+                .map(|f| f.handle.clone())
+                .collect::<Vec<String>>();
+            wardens_in_contest.sort_unstable();
+            wardens_in_contest.dedup();
+
+            // could be that some contests start at the exact date time - only the first one will be inserted
+            let contest_start = t.start;
+            // filter out contests that have not been awarded yet (0 participants)
+            if wardens_in_contest.len() > 0 {
+                data.insert(contest_start, wardens_in_contest.len() as u64);
+            }
+        });
+
+    let mut v = Vec::from_iter(data.into_iter());
+    v.sort_by_key(|&(date, _)| date);
+    v
+}
+
 fn create_dual_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Date<Utc>, f64)>) {
     let root_area =
         BitMapBackend::new("plots/work_awards_dual.png", (1280, 768)).into_drawing_area();
@@ -188,7 +227,6 @@ fn create_dual_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Dat
 
     ctx.configure_mesh()
         .x_labels(hours_worked.len())
-        // We can also change the format of the label text
         .x_label_formatter(&|d| hours_worked[*d].0.format("%b-%y").to_string())
         .y_desc("Hours worked")
         .draw()
@@ -257,7 +295,6 @@ fn create_hourly_rate_plot(
 
     ctx.configure_mesh()
         .x_labels(hours_worked.len())
-        // We can also change the format of the label text
         .x_label_formatter(&|d| hours_worked[*d].0.format("%b-%y").to_string())
         .y_desc("Hourly rate $/h")
         .draw()
@@ -274,13 +311,57 @@ fn create_hourly_rate_plot(
     .label("hourly rate $/h");
 }
 
+fn create_warden_participation_plot(wardens_per_contest: Vec<(DateTime<Utc>, u64)>) {
+    let root_area =
+        BitMapBackend::new("plots/wardens_per_contest.png", (1280, 768)).into_drawing_area();
+    root_area.fill(&WHITE).unwrap();
+
+    let min_date = *wardens_per_contest
+        .iter()
+        .map(|(date, _)| date)
+        .min()
+        .unwrap();
+    let max_date = *wardens_per_contest
+        .iter()
+        .map(|(date, _)| date)
+        .max()
+        .unwrap();
+    let max_wardens = *wardens_per_contest
+        .iter()
+        .map(|(_, minutes)| minutes)
+        .max()
+        .unwrap();
+
+    let mut ctx = ChartBuilder::on(&root_area)
+        .set_label_area_size(LabelAreaPosition::Left, 40)
+        .set_label_area_size(LabelAreaPosition::Right, 40)
+        .set_label_area_size(LabelAreaPosition::Bottom, 40)
+        .caption("Wardens per contest", ("sans-serif", 40))
+        .build_cartesian_2d(min_date..max_date, 0..max_wardens)
+        .unwrap();
+
+    ctx.configure_mesh()
+        .x_labels(10)
+        .x_label_formatter(&|d| d.format("%d-%b-%y").to_string())
+        .y_desc("wardens / contest")
+        .draw()
+        .unwrap();
+
+    ctx.draw_series(LineSeries::new(wardens_per_contest, &BLUE))
+        .unwrap()
+        .label("wardens / contest");
+}
+
 fn main() {
     let hours_worked = get_monthly_hours();
     println!("{:?}", hours_worked);
     let awards_earned = get_monthly_awards();
     println!("{:?}", awards_earned);
+    let wardens_per_contest = get_wardens_per_contest();
+    println!("{:?}", wardens_per_contest);
 
     // ctx.draw_series takes ownership
     create_dual_plot(hours_worked.clone(), awards_earned.clone());
     create_hourly_rate_plot(hours_worked.clone(), awards_earned.clone());
+    create_warden_participation_plot(wardens_per_contest.clone());
 }
