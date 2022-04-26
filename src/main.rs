@@ -209,7 +209,7 @@ fn create_dual_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Dat
     // let max_val = *hours_worked.iter().map(|(_, minutes)| minutes).max().unwrap();
     let max_hours = hours_worked
         .iter()
-        .map(|(_, minutes)| *minutes)
+        .map(|(_, hours)| *hours)
         .fold(f64::NEG_INFINITY, f64::max);
     let max_awards = awards_earned
         .iter()
@@ -328,7 +328,7 @@ fn create_warden_participation_plot(wardens_per_contest: Vec<(DateTime<Utc>, u64
         .unwrap();
     let max_wardens = *wardens_per_contest
         .iter()
-        .map(|(_, minutes)| minutes)
+        .map(|(_, v)| v)
         .max()
         .unwrap();
 
