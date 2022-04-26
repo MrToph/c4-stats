@@ -196,4 +196,3 @@ pub fn get_wardens_per_contest() -> Vec<(DateTime<Utc>, u64)> {
     v.sort_by_key(|&(date, _)| date);
     v
 }
-
