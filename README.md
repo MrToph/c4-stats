@@ -1,4 +1,4 @@
-> 🚧  In development, basic charts work but code not clean & not easy to run
+> 🚧  code requires a timesheet csv to run
 
 # c4-stats
 
