@@ -1,8 +1,5 @@
-use chrono::{Date, DateTime, Datelike /* for .year() */, TimeZone, Utc};
-use csv;
+use chrono::{Date, DateTime, Utc};
 use plotters::prelude::*;
-use serde::Deserialize;
-use std::collections::HashMap;
 
 pub fn create_dual_plot(hours_worked: Vec<(Date<Utc>, f64)>, awards_earned: Vec<(Date<Utc>, f64)>) {
   let root_area =

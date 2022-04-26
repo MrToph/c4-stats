@@ -1,11 +1,6 @@
 mod charts;
 mod data;
 
-use chrono::{Date, DateTime, Datelike /* for .year() */, TimeZone, Utc};
-use csv;
-use plotters::prelude::*;
-use serde::Deserialize;
-use std::collections::HashMap;
 use charts::*;
 use data::*;
 
