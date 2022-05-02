@@ -1,4 +1,4 @@
-> 🚧  code requires a timesheet csv to run
+> 🚧  code requires a timesheet CSV to run. I removed mine for privacy reasons.
 
 # c4-stats
 
